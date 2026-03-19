@@ -1,0 +1,73 @@
+1.What Nginx does and how it differs from Apache ?
+
+Ans: Nginx is an open-source web server, reverse proxy, load balancer, and HTTP cache designed for high performance and scalability.  Unlike traditional web servers that spawn a new process or thread per connection, Nginx uses an event-driven, asynchronous architecture, enabling it to handle thousands of concurrent connections efficiently with minimal memory and CPU usage. 
+
+Nginx operates using a master process that manages configuration and spawns worker processes, each capable of handling many simultaneous connections.  This design makes it ideal for serving static content, managing traffic spikes, and acting as a reverse proxy in modern web architectures.
+
+| Feature                                         | Nginx                                                 | Apache                                                     |
+|--------                                         |----------                                             |-----------                                                 | 
+| Architecture                                    | Event-driven, asynchronous                            | Process/thread-based, synchronous                          |
+| Static Content Performance                      | Excellent – fast, low memory use                      | Good – higher resource consumption                         |
+| Dynamic Content Handling                        | Requires external processors (e.g., PHP-FPM)          | Native support via in-process modules                      |
+| Configuration                                   | Centralized, declarative syntax                       | Supports `.htaccess` for per-directory overrides           |
+| Flexibility                                     | High performance, limited per-directory control       | High flexibility, but slower under heavy load              |
+| Use Cases                                       | High-traffic sites, reverse proxying, load balancing  | Shared hosting, dynamic CMS (e.g., WordPress), legacy apps |
+
+
+2.How the firewall protects the server?
+
+Ans: Nginx protects servers through built-in firewall-like features and integration with full Web Application Firewalls (WAFs):
+
+*Access Control:  Restricts traffic by IP using allow/deny rules. 
+*quest Filtering: Blocks malicious HTTP methods, headers, or patterns using regex. 
+*Security Headers: Enforces HTTPS (HSTS), prevents clickjacking (X-Frame-Options), and mitigates XSS.
+*WAF Integration: With ModSecurity and OWASP Core Rule Set (CRS), Nginx can inspect and block SQL injection, XSS, and other OWASP Top 10 threats. 
+*Commercial WAF: NGINX App Protect WAF (by F5) offers advanced, signature-based protection for APIs and apps. 
+*While open-source Nginx provides basic defenses, it becomes a full WAF when paired with ModSecurity or NGINX App Protect. 
+
+
+3.How the health check script helps prevent downtime?
+
+Ans: A health check script prevents downtime by automatically detecting and isolating unhealthy backend servers in a load-balanced environment.  Here's how:
+
+Active Health Checks: Nginx Plus or third-party modules (like nginx_upstream_check_module) send periodic requests (e.g., GET /health) to each server. If a server fails a defined number of checks (fall=3), it’s marked down and traffic is rerouted. 
+Passive Health Checks: In open-source Nginx, failed requests (timeouts, errors) are monitored. After max_fails failures within fail_timeout, the server is temporarily excluded. 
+Fast Failover: By quickly identifying crashes, hangs, or high latency, health checks prevent user requests from hitting broken servers, reducing errors and downtime. 
+Automatic Recovery: Once a server passes a defined number of checks (rise=2), it’s automatically restored to the pool, minimizing manual intervention. 
+This ensures only healthy servers receive traffic, maintaining application availability.
+
+
+
+4.Improvements for a production-ready monitored server
+
+Ans: To make a Nginx server production-ready and resilient, consider these enhancements:
+
+1.Enable Monitoring:
+
+Use ngx_http_stub_status_module to expose metrics like active connections and requests.
+Integrate with tools like Prometheus, Grafana, or Datadog for real-time dashboards.
+ 
+2.Implement Logging & Alerting:
+
+Configure detailed access_log and error_log with structured formats.
+Use centralized logging (e.g., ELK Stack) for analysis and anomaly detection.
+
+3.Automate Health Checks:
+
+Deploy custom scripts or use Nginx Plus for active health monitoring.
+Set up alerts for high latency, error rates, or server failures.
+
+4.Optimize Caching:
+
+Enable proxy_cache for dynamic content and fastcgi_cache for PHP.
+Use cache purging mechanisms to ensure freshness.
+
+5.Secure Configuration:
+
+Disable unnecessary modules.
+Enforce HTTPS with HSTS and secure headers.
+Regularly update and patch Nginx.
+
+6.Use in Containerized Environments:
+
+Deploy Nginx as an Ingress Controller in Kubernetes for automated scaling and routing. 
