@@ -1,0 +1,2 @@
+# Linux-Web-Server-Setup-Nginx-Firewall-Package-Management-Log-Monitoring
+you will set up a production-style Linux web server from scratch. You will install and configure Nginx, manage packages, configure the firewall, monitor logs, and write a shell script that automatically checks server health. This mirrors what a junior Linux engineer does when setting up and maintaining a web server in a real company.
