@@ -1,0 +1,480 @@
+Step:1 Package Management & Nginx Installation
+
+## System update and package management basics ##
+sudo su -
+
+# Check current packages installed
+
+dpkg --list | wc -l    # Ubuntu
+
+# Update all packages
+# apt update && apt upgrade -y   # Ubuntu
+
+# Search for a package
+Apt  search nginx
+Apt  info nginx
+
+# Install useful tools
+Apt  install -y wget curl tree net-tools bind-utils
+
+# Verify installation
+which wget
+which curl
+which tree
+
+# Check package info
+rpm -qi curl
+rpm -ql curl | head -10
+
+# List recently installed packages
+rpm -qa --last | head -10
+ Install and configure Nginx
+# Install Nginx
+
+ apt install -y nginx     # Ubuntu
+
+# Verify installation
+nginx -v
+which nginx
+rpm -ql nginx | head -20
+
+# Start and enable Nginx
+systemctl start nginx
+systemctl enable nginx
+systemctl status nginx
+
+# Check Nginx is listening on port 80
+ss -tlnp | grep :80
+netstat -tlnp | grep nginx
+
+# Test locally
+curl http://localhost
+curl -I http://localhost   # headers only
+
+## Create a custom website ##
+
+ie;
+# Backup default page
+cp /usr/share/nginx/html/index.html /usr/share/nginx/html/index.html.bak
+
+# Create custom page
+cat > /usr/share/nginx/html/index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Linux Web Server — Capstone Project 2</title>
+  <style>
+    body { font-family: Arial; background: #1a1a2e; color: #eee; text-align: center; padding: 50px; }
+    h1 { color: #16213e; background: #e94560; padding: 20px; border-radius: 8px; }
+    .info { background: #16213e; padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 600px; }
+    .green { color: #00ff88; }
+  </style>
+</head>
+<body>
+  <h1>Linux Web Server</h1>
+  <div class="info">
+    <p><span class="green">Status:</span> Online and Running</p>
+    <p><span class="green">Project:</span> Linux Capstone Project 2</p>
+    <p><span class="green">Student:</span> [YourName]</p>
+    <p><span class="green">Server:</span> Nginx on Amazon Linux 2023</p>
+    <p><span class="green">Purpose:</span> Junior Linux Engineer Capstone</p>
+  </div>
+</body>
+</html>
+EOF
+
+# Create a second page
+cat > /usr/share/nginx/html/about.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial; text-align:center; padding:50px;">
+  <h1>About This Server</h1>
+  <p>This web server was configured as part of the Linux Capstone Project.</p>
+  <p>Technologies used: Nginx | Linux | Firewall | Shell Scripting</p>
+  <a href="/">Back to Home</a>
+</body>
+</html>
+EOF
+
+# Reload Nginx to apply changes
+systemctl reload nginx
+
+# Test in browser or with curl
+curl http://localhost
+
+Explore Nginx configuration
+# View main Nginx config
+cat /etc/nginx/nginx.conf
+
+# View configuration directory
+ls -la /etc/nginx/
+
+# Check Nginx config syntax
+nginx -t
+
+# View default server block
+cat /etc/nginx/conf.d/default.conf 2>/dev/null || cat /etc/nginx/sites-enabled/default 2>/dev/null
+
+# View Nginx logs location
+grep "access_log\|error_log" /etc/nginx/nginx.conf
+
+
+Step 2: Firewall Configuration
+
+## Configure firewall with firewalld ##
+
+# Install firewalld if not present
+Apt  install -y firewalld
+
+# Start and enable firewalld
+systemctl start firewalld
+systemctl enable firewalld
+systemctl status firewalld
+
+# Check current firewall rules
+firewall-cmd --list-all
+
+# Check default zone
+firewall-cmd --get-default-zone
+
+# Allow HTTP (port 80)
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=ssh
+
+# Allow a custom port (8080 for testing)
+firewall-cmd --permanent --add-port=8080/tcp
+
+# Reload firewall to apply permanent rules
+firewall-cmd --reload
+
+# Verify rules applied
+firewall-cmd --list-all
+
+# Remove the test port
+firewall-cmd --permanent --remove-port=8080/tcp
+firewall-cmd --reload
+firewall-cmd --list-all
+
+## Test firewall blocking ##
+
+# Try to access a blocked port from the server itself
+
+curl http://localhost:8080    # should fail/timeout after removal
+
+# Check what ports are open
+
+ss -tlnp
+firewall-cmd --list-ports
+firewall-cmd --list-services
+
+# Block a specific IP (example — use a test IP)
+
+firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="192.168.100.100" reject'
+firewall-cmd --reload
+firewall-cmd --list-rich-rules
+
+# Remove the IP block
+
+firewall-cmd --permanent --remove-rich-rule='rule family="ipv4" source address="192.168.100.100" reject'
+firewall-cmd --reload
+
+
+Step 3: Log Monitoring & Network Commands
+
+## Generate and monitor Nginx logs ##
+
+# Generate web traffic to create log entries
+curl http://localhost/
+curl http://localhost/about.html
+curl http://localhost/nonexistent.html    # generates 404
+curl http://localhost/
+curl -A "TestBrowser/1.0" http://localhost/
+
+# View access logs
+tail -20 /var/log/nginx/access.log
+
+# View error logs
+tail -20 /var/log/nginx/error.log
+
+# Real-time log monitoring (run then make requests in another terminal)
+tail -f /var/log/nginx/access.log &
+
+# Generate more traffic
+for i in {1..5}; do curl -s http://localhost/ > /dev/null; done
+
+# Stop the tail
+kill %1
+
+# Analyze logs with grep and awk
+grep "404" /var/log/nginx/access.log
+grep "200" /var/log/nginx/access.log | wc -l
+awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -rn
+awk '{print $9}' /var/log/nginx/access.log | sort | uniq -c
+
+## System log monitoring ##
+
+# View system logs
+tail -50 /var/log/messages        # CentOS/Amazon Linux
+# tail -50 /var/log/syslog       # Ubuntu
+
+# View authentication logs
+tail -20 /var/log/secure          # CentOS/Amazon Linux
+# tail -20 /var/log/auth.log     # Ubuntu
+
+# Filter for specific events
+grep "nginx" /var/log/messages
+grep "Failed" /var/log/secure 2>/dev/null || grep "Failed" /var/log/auth.log 2>/dev/null
+
+# Monitor logs live
+journalctl -u nginx -f &
+sleep 3
+curl http://localhost
+kill %1
+
+# View journal for specific service
+journalctl -u nginx --since "1 hour ago"
+journalctl -u firewalld --since "today"
+
+## Network commands ##
+
+# Check network interfaces
+ip addr show
+ip link show
+ifconfig 2>/dev/null || ip addr
+
+# Check routing table
+ip route show
+route -n 2>/dev/null || ip route
+
+# Test connectivity
+ping -c 4 google.com
+ping -c 4 8.8.8.8
+
+# DNS lookup
+nslookup google.com
+dig google.com
+dig google.com +short
+
+# Download a file with wget and curl
+wget -O /tmp/test_download.html http://localhost/
+curl -o /tmp/curl_download.html http://localhost/
+ls -lh /tmp/test_download.html /tmp/curl_download.html
+
+# Check open ports
+ss -tlnp
+ss -tlnp | grep nginx
+ss -tlnp | grep :80
+
+# Check network stats
+netstat -s 2>/dev/null || ss -s
+
+# Trace route
+traceroute google.com 2>/dev/null || tracepath google.com
+
+
+Step 4: Shell Scripting & Automation
+
+## Write a server health check script ##
+
+cat > /usr/local/bin/server_health_check.sh << 'SCRIPT'
+#!/bin/bash
+
+# ============================================
+# Server Health Check Script
+# Linux Capstone Project 2
+# ============================================
+
+LOGFILE="/var/log/health_check.log"
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+PASS=0
+FAIL=0
+
+log() {
+    echo "[$TIMESTAMP] $1" | tee -a $LOGFILE
+}
+
+check_service() {
+    SERVICE=$1
+    if systemctl is-active --quiet $SERVICE; then
+        log " PASS: $SERVICE is running"
+        ((PASS++))
+    else
+        log " FAIL: $SERVICE is NOT running"
+        ((FAIL++))
+        # Attempt to restart
+        systemctl restart $SERVICE
+        log " Attempted restart of $SERVICE"
+    fi
+}
+
+check_port() {
+    PORT=$1
+    NAME=$2
+    if ss -tlnp | grep -q ":$PORT"; then
+        log " PASS: Port $PORT ($NAME) is open"
+        ((PASS++))
+    else
+        log " FAIL: Port $PORT ($NAME) is NOT open"
+        ((FAIL++))
+    fi
+}
+
+check_disk() {
+    THRESHOLD=80
+    USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
+    if [ $USAGE -lt $THRESHOLD ]; then
+        log " PASS: Disk usage is ${USAGE}% (below ${THRESHOLD}% threshold)"
+        ((PASS++))
+    else
+        log " WARN: Disk usage is ${USAGE}% (above ${THRESHOLD}% threshold)"
+        ((FAIL++))
+    fi
+}
+
+check_memory() {
+    FREE_MEM=$(free | awk 'NR==2{printf "%.0f", $4/$2*100}')
+    if [ $FREE_MEM -gt 10 ]; then
+        log " PASS: Free memory is ${FREE_MEM}%"
+        ((PASS++))
+    else
+        log " WARN: Low memory — only ${FREE_MEM}% free"
+        ((FAIL++))
+    fi
+}
+
+check_http() {
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+    if [ "$HTTP_CODE" == "200" ]; then
+        log " PASS: HTTP response code is $HTTP_CODE"
+        ((PASS++))
+    else
+        log " FAIL: HTTP response code is $HTTP_CODE (expected 200)"
+        ((FAIL++))
+    fi
+}
+
+# ---- Run All Checks ----
+log "========================================"
+log "Server Health Check Started"
+log "========================================"
+
+check_service "nginx"
+check_service "firewalld"
+check_port 80 "HTTP"
+check_port 22 "SSH"
+check_disk
+check_memory
+check_http
+
+log "========================================"
+log "Health Check Complete: PASS=$PASS | FAIL=$FAIL"
+log "========================================"
+echo ""
+SCRIPT
+
+# Make executable
+chmod +x /usr/local/bin/server_health_check.sh
+
+# Run the script manually
+/usr/local/bin/server_health_check.sh
+
+# View the log output
+cat /var/log/health_check.log
+
+Schedule the health check with crontab
+# Add to crontab — run every 5 minutes
+crontab -e
+# Add this line:
+# */5 * * * * /usr/local/bin/server_health_check.sh
+
+# Verify crontab
+crontab -l
+
+# Wait 5 minutes then check if it ran
+tail -30 /var/log/health_check.log
+
+Write an if-else script for Nginx management
+cat > /usr/local/bin/manage_nginx.sh << 'SCRIPT'
+#!/bin/bash
+
+# Nginx Service Management Script
+
+ACTION=$1
+
+if [ -z "$ACTION" ]; then
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 1
+fi
+
+case $ACTION in
+    start)
+        echo "Starting Nginx..."
+        systemctl start nginx
+        if systemctl is-active --quiet nginx; then
+            echo " Nginx started successfully"
+        else
+            echo " Failed to start Nginx"
+        fi
+        ;;
+    stop)
+        echo "Stopping Nginx..."
+        systemctl stop nginx
+        echo " Nginx stopped"
+        ;;
+    restart)
+        echo "Restarting Nginx..."
+        systemctl restart nginx
+        if systemctl is-active --quiet nginx; then
+            echo " Nginx restarted successfully"
+        else
+            echo " Failed to restart Nginx"
+        fi
+        ;;
+    status)
+        systemctl status nginx
+        ;;
+    *)
+        echo " Invalid action: $ACTION"
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+SCRIPT
+
+chmod +x /usr/local/bin/manage_nginx.sh
+
+# Test all options
+/usr/local/bin/manage_nginx.sh status
+/usr/local/bin/manage_nginx.sh stop
+/usr/local/bin/manage_nginx.sh start
+/usr/local/bin/manage_nginx.sh restart
+/usr/local/bin/manage_nginx.sh invalid
+
+Final system state verification
+# Final check of everything
+echo "=== NGINX STATUS ==="
+systemctl status nginx --no-pager
+
+echo "=== FIREWALL RULES ==="
+firewall-cmd --list-all
+
+echo "=== OPEN PORTS ==="
+ss -tlnp
+
+echo "=== DISK USAGE ==="
+df -h
+
+echo "=== MEMORY ==="
+free -h
+
+echo "=== CRONTAB ==="
+crontab -l
+
+echo "=== HEALTH CHECK LOG ==="
+tail -20 /var/log/health_check.log
+
+echo "=== NGINX ACCESS LOG ==="
+tail -10 /var/log/nginx/access.log
+
+
+______________DONE_________________
