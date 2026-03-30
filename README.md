@@ -1,7 +1,7 @@
-🔧 Project Overview
+🔧 Project Overview :
 This project simulates the responsibilities of a junior Linux engineer by setting up a production-style web server from scratch. The tasks include installing and configuring Nginx, managing packages with YUM/APT, securing the system with a firewall, monitoring logs with rsyslog, and automating server health checks using a shell script scheduled via cron. The goal is to build a resilient, secure, and monitored environment similar to what is used in real-world production systems.
 
-🖥️ Project Architecture Breakdown
+🖥️ Project Architecture Breakdown :
 • 	Linux Web Server (EC2 or VM)
 The foundation of the project, providing the operating system and environment for hosting services.
 • 	Nginx Web Server
@@ -21,7 +21,7 @@ The foundation of the project, providing the operating system and environment fo
 • 	Checks if Nginx and other critical services are running.
 • 	Can restart services or send alerts if issues are detected, reducing downtime risk.
 
-📊 Production-Style Monitoring
+📊 Production-Style Monitoring :
 This setup ensures the server is functional and secure, but to make it fully production-ready, you would add:
 • 	Centralized monitoring tools (Prometheus + Grafana) for metrics visualization.
 • 	Log aggregation (ELK stack) for deeper analysis and troubleshooting.
